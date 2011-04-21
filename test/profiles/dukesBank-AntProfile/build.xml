@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+
+<project name="jmeter-experiment" default="all">
+
+    <property file="build.properties" />
+
+    <!-- In order to use environment variable VARNAME by env.VARNAME: -->
+    <property environment="env" />
+
+    <property name="log.dir" value="log/" />
+    <property name="log.jmeter.jmeterlog" value="${log.dir}/jmeter.log" />
+    <property name="log.jmeter.errors" value="${log.dir}/error.log" />
+    <property name="log.jmeter.assertionErrors" value="${log.dir}/assertionErrors.log" />
+    <property name="log.accesslog" value="${log.dir}/accesslog.csv" />
+
+    <property name="tmp.dir" value="tmp/" />
+    <property name="tmp.wgetout" value="/tmp/wget.out" />
+
+    <property name="plots.dir" value="plots/" />
+    <property name="plots.accesslog.dir" value="${plots.dir}/accesslog/" />
+
+    <property name="script.dumpJMXInfo" value="bin/dumpJMXInfo.sh" />
+    <property name="script.report.accesslog" value="bin/accesslog_plot.sh" />
+
+    <property name="tomcat.accesslog" value="${TOMCATHOME}/logs/access_log.txt" />
+
+    <taskdef
+        name="jmeter"
+        classpath="ant-jmeter.jar"
+        classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask"/>
+
+    <target name="initVars">
+        <tstamp>
+            <format property="date" pattern="yyyy-MM-dd"/>
+        </tstamp>
+    </target>
+
+    <target name="init">
+        <echo>Make sure you restarted the server ...</echo>
+        <mkdir dir="${tmp.dir}" />
+
+    </target>
+
+    <target name="clean">
+        <delete>
+            <fileset dir="${log.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </delete>
+        <delete dir="${tmp.dir}" />
+        <delete>
+            <fileset dir="${plots.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </delete>
+    </target>
+
+
+    <!-- Requires the following parameters to be passed:
+         testPlan:   Path to Test Plan file (.jmx)
+         numThreads: Size of JMeter thread pool
+         duration:   Experiment duration in seconds
+         rampUp:     Rampup period in seconds
+    -->
+    <target name="jmeter.runTestPlan">
+        <echo>Running Test Plan '${testPlan}'</echo>
+        <exec executable="${script.dumpJMXInfo}" failonerror="true">
+            <arg value="-f" /><arg value="${testPlan}" />
+            <arg value="-t" /><arg value="${numThreads}" />
+            <arg value="-d" /><arg value="${duration}" />
+            <arg value="-r" /><arg value="${rampup}" />
+            <arg value="-h" /><arg value="${SRVHOST}" />
+        </exec>
+
+        <jmeter
+            failureProperty="jmeter.fail"
+            jmeterhome="${jmeterhome}"
+            testplan="${testPlan}"
+            jmeterlog="${log.jmeter.jmeterlog}">
+            <!-- resultlog="${log.jmeter.resultsJtl}" -->
+
+            <!-- base heap size -->
+            <jvmarg value="-Xms1024m" />
+            <jvmarg value="-Xmx1536m" />
+
+            <!-- eden size -->
+            <jvmarg value="-XX:NewSize=512m" />
+            <jvmarg value="-XX:MaxNewSize=512m" />
+
+            <!-- Force suitable defaults -->
+            <property name="jmeter.save.saveservice.output_format" value="xml"/>
+            <property name="jmeter.save.saveservice.assertion_results" value="all"/>
+            <property name="jmeter.save.saveservice.bytes" value="true"/>
+            <property name="file_format.testlog" value="${format}"/>
+            <property name="jmeter.save.saveservice.response_data.on_error" value="${funcMode}"/>
+
+            <property name="SRVHOST" value="${SRVHOST}" />
+            <property name="SRVPORT" value="${SRVPORT}" />
+            <property name="SRVBASEPATH" value="${SRVBASEPATH}" />
+            <property name="NUMTHREADS" value="${numThreads}" />
+            <property name="DURATION" value="${duration}" />
+            <property name="RAMPUP" value="${rampup}" />
+
+            <property name="maxUserId" value="${USER_NUM_MAX}" />
+
+            <property name="errorlog" value="${log.jmeter.errors}" />
+            <property name="assertionerrors" value="${log.jmeter.assertionErrors}" />
+        </jmeter>
+
+        <fail message="JMeter failed">
+            <condition>
+                <or>
+                    <istrue value="${jmeter.fail}"/>
+                    <length file="${log.jmeter.assertionErrors}" when="greater" length="0" />
+                    <length file="${log.jmeter.errors}" when="greater" length="0" />
+                </or>
+            </condition>
+        </fail>
+    </target>
+
+    <target name="preamble.run" depends="init">
+    </target>
+
+    <target name="warmup.run" depends="init">
+        <echo>Running Warmup Test Plan '${MAINJMX}'</echo>
+        <antcall target="jmeter.runTestPlan">
+            <param name="testPlan" value="${WARMUPJMX}"/>
+            <param name="numThreads" value="${WARMUPNUMTHREADS}"/>
+            <param name="duration" value="${WARMUPDURATION}"/>
+            <param name="rampup" value="${WARMUPRAMPUP}"/>
+        </antcall>
+    </target>
+
+    <target name="main.run" depends="init">
+        <echo>Running Main Test Plan '${MAINJMX}' to '${SRVBASEPATH}'</echo>
+
+        <antcall target="jmeter.runTestPlan">
+            <param name="testPlan" value="${MAINJMX}"/>
+            <param name="numThreads" value="${MAINNUMTHREADS}"/>
+            <param name="duration" value="${MAINDURATION}"/>
+            <param name="rampup" value="${MAINRAMPUP}"/>
+        </antcall>
+    </target>
+
+    <target name="logs.fetch">
+        <!--<antcall target="accesslog.fetch" />-->
+    </target>
+
+    <target name="report">
+    </target>
+
+    <target name="all" depends="">
+        <antcall target="clean" />
+        <antcall target="init" />
+
+        <antcall target="preamble.run" />
+        <!--<antcall target="warmup.run" />-->
+	<!--<antcall target="accesslog.markEndOfWarmup"/>-->
+        <antcall target="main.run" />
+
+        <!--<antcall target="logs.fetch" />-->
+        <!--<antcall target="report" />-->
+    </target>
+
+</project>

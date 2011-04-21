@@ -1,0 +1,19 @@
+Introduction:
+
+This document summarizes changes made in all releases.
+
+* 1.0.20080617 (Released 2008-06-17)
+ - Markov4JMeter ready for JMeter 2.3.2
+ - Minor improvements to example profiles and tutorial
+
+* 1.0.20080105 (Released 2008-01-05)
+ - Markov4JMeter now entirely ready for JMeter 2.3 
+   (due to changes in  JMeter 2.3, the Session Arrival Controller didn't work properly)
+ - Provide new examples
+ - Minor code cleanups
+
+* 0.9.20070809.0905-beta (Released 2007-08-08)
+ - Corrected issue within Arrival Controller. There was a problem when the number of active sessions should increase heavily by a given formula.
+
+* 0.9.20070601.1348-beta (Released 2007-06-01)
+ - Initial version

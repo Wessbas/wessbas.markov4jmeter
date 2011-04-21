@@ -1,0 +1,23 @@
+import org.apache.jmeter.util.JMeterUtils;
+
+private static double numSessions (double min){
+  double retVal = 0;
+  retVal += (min<=230)?1/((min+80)/20d)*1.2:0;
+  retVal += (min>230 && min<=320)?(min-160)*0.001d:0;
+  retVal += (min>320 && min<=410)?(min-280)*0.004d:0;
+  retVal += (min>410 && min<=620)?Math.cos((min-545)/120d)*1.2:0;
+  retVal += (min>620 && min<=650)?(min-1600)*-0.001d:0;
+  retVal += (min>650 && min<=690)?(min+1250)*0.0005d:0;
+  retVal += (min>690 && min<=850)?Math.cos((min-790)/200d)*1.1:0;
+  retVal += (min>850 && min<=965)?(min-330)*0.0020d:0;
+  retVal += (min>965)?Math.cos((min-1150)/200d)*2.1:0;
+}
+
+
+long startMs = Long.parseLong(JMeterUtils.getPropDefault("TEST.START.MS",""));
+float expMin = (float)(System.currentTimeMillis()-startMs)/(double)(1000*60);
+double durationMin=5; // scales the curve w/ respect to the duration
+int maxUser=60; // scales the curve w/ respect to the number of users
+int numSessions =  (int) (numSessions(expMin*(1440/durationMin))/2f*maxUser);
+return numSessions>1?numSessions:5;
+

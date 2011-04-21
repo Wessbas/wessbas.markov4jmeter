@@ -1,0 +1,6 @@
+In order to run the exmaple Test Plan "jmx/JPS-tutorial.jmx", 
+JMeter needs to be called from this directory since pathes 
+included in the Test Plan are given relative to this directory.
+
+In order to call the Test Plan in non-GUI mode, call:
+$ {PATH/TO/JMETER} -n -t jmx/JPS-tutorial.jmx

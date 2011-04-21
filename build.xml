@@ -1,0 +1,454 @@
+<?xml version="1.0"?>
+<!-- This file is based on the build.xml which comes with the JMeter sources -->
+<!--
+   Copyright 1999-2005 The Apache Software Foundation
+ 
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+ 
+       http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<project name="Markov4JMeter" default="all" basedir=".">
+  <description>
+    To build Markov4JMeter from source and install:
+      ant [all]
+    To rebuild and install:
+      ant install
+
+    To build API documentation (Javadoc)
+      ant docs-api
+    To build all the docs
+      ant docs-all
+
+    To build all and package up the files for distribution
+      ant distribution [ -Dmarkov4jmeter.version=vvvv ]
+
+    For more info:
+      ant -projecthelp
+
+    To diagnose usage of deprecated APIs:
+      ant -Ddeprecation=on clean compile
+  </description>
+
+  <!-- Where the Sources live -->
+  <property name="src.dir" value="src"/>
+  <property name="src.test" value="test/src"/>
+  <property name="src.junit" value="src/junit"/>
+
+  <!-- Where the examples live -->
+  <property name="examples.dir" value="examples"/>
+
+  <!-- Where the documentation (tutorial) lives -->
+  <property name="doc.dir" value="doc"/>
+  
+    <!-- Tutorial pdf -->
+  <property name="tutorial.pdf" value="doc/tutorial.pdf"/>
+
+  <!-- Javadoc sources -->
+  <path id="srcpaths">
+    <pathelement location="${src.dir}"/>
+  </path>
+
+  <!-- Temporary build directories: where the .class live -->
+  <property name="build.dir" location="build"/>
+  <property name="build.junit" value="build/junit"/>
+  <property name="build.test" location="build/test"/>
+  
+  <!-- Where the build result .jars will be placed -->
+  <property name="dest.jar" value="dist"/>
+
+  <!-- Where the API documentation lives -->
+  <property name="dest.docs.api" value="dist/javadoc"/>
+
+  <!-- Directory where these 3rd party libraries will live -->
+  <property name="lib.dir" value="lib"/>
+
+  <!-- Directory where Optional 3rd party libraries will live -->
+  <property name="lib.opt" value="lib/opt"/>
+
+  <!-- Where the distribution packages will be created -->
+  <property name="dist.dir" value="dist"/>
+
+  <!-- Where the web-site packages will be created -->
+  <property name="site.dir" value="site"/>
+
+  <!-- Compilation parameters -->
+  <property name="optimize" value="on"/>
+  <property name="deprecation" value="off"/>
+  <property name="target.java.version" value="1.5"/>
+  <property name="src.java.version" value="1.5"/>
+  <property name="encoding" value="UTF-8"/>
+
+  <!-- Jars for binary release -->
+  <patternset id="external.jars">
+    <include name="LICENSE"/>
+    <include name="NOTICE"/>
+    <include name="README"/>
+    <include name="TODO"/>    
+    <include name="MANIFEST"/>
+    <include name="${lib.dir}/*.html"/>
+    <include name="${lib.dir}/LICENSE*.*"/>
+  </patternset>
+
+  <!--
+  Optional jars, not included in distribution.
+  Any such jars need to be downloaded separately.
+  These can be put into ${lib.dir} or ${lib.opt}
+  - both of these are included in the build classpath
+  
+  Any jars put into ${lib.dir} will be included in
+  the classpath used by Markov4JMeter
+  Jars in ${lib.opt} are NOT normally included by Markov4JMeter
+  
+  Placing an optional jar in ${lib.opt} means that it
+  will be included in the build classpath, but it will
+  not be included in the runtime classpath. This is intended
+  for testing Markov4JMeter without the optional Jar file(s).
+  -->
+  
+  <!-- Build classpath (includes the optional jar directory) -->
+  <!-- Exclude the htmlparser jars to prevent clashes between versions -->
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="*.jar"/>
+    <fileset dir="${lib.opt}" includes="*.jar"/>
+  </path>
+
+  <target name="init-version">
+  	<tstamp/>
+  <!-- Markov4JMeter version -->
+  <!--<property name="markov4jmeter.version" value="0.9.${DSTAMP}.${TSTAMP}-beta"/>-->
+  <property name="markov4jmeter.version" value="1.0.${DSTAMP}"/>
+  </target>
+
+  <target name="init" depends="init-version">
+    <!-- Create the optional directory (fileset complains if it is missing) -->
+    <mkdir dir="${lib.opt}"/>
+  </target>
+
+  	<!-- Markov4JMeter Javadoc version (own variable is used so can be overriden independently) -->
+  <property name="docversion" value="${markov4jmeter.version}"/>
+   
+  <target name="compile-core" depends="update-version" description="Compile Markov4JMeter core classes.">
+    <mkdir dir="${build.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build.dir}" optimize="${optimize}" source="${src.java.version}" debug="on" target="${target.java.version}" deprecation="${deprecation}" encoding="${encoding}">
+      <include name="**/*.java"/>
+      <classpath>
+        <path refid="classpath"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="update-version" unless="version.noupdate"
+  depends="init-version">
+    <echo>Updating version string</echo>
+    <replaceregexp file="${src.dir}/net/voorn/markov4jmeter/util/Markov4JMeterVersion.java"
+    	match="VERSION = &quot;.*?&quot;"
+	replace="VERSION = &quot;${markov4jmeter.version}&quot;"/>
+  </target>
+
+  
+  <target name="compile" 
+  depends="compile-core"
+  description="Compile everything."/>
+
+  <target name="jar" depends="package" 
+     description="Compile everything and create the jars (make netbeans happy)"/>  
+
+  <target name="package" depends="compile, package-only"
+     description="Compile everything and create the jars"/>
+       
+  <target name="package-only" description="Package already-compiled classes (shortcut for IDE users)">
+    <mkdir dir="${dest.jar}"/>
+        
+    <!-- core -->    
+    <jar jarfile="${dest.jar}/Markov4JMeter-${markov4jmeter.version}.jar" 
+    	manifest="MANIFEST">
+      <!-- Only include class files from build tree - see above -->
+      <fileset dir="${build.dir}" includes="**/*.class" />
+      <metainf dir="." includes="LICENSE,NOTICE,TODO"/>
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+        <attribute name="Implementation-Version" value="${markov4jmeter.version}"/>
+        <attribute name="X-Compile-Source-JDK" value="${src.java.version}"/>
+        <attribute name="X-Compile-Target-JDK" value="${target.java.version}"/>
+      </manifest>
+    </jar>
+    <copy file="${dest.jar}/Markov4JMeter-${markov4jmeter.version}.jar" tofile="${dest.jar}/Markov4JMeter.jar"/>
+  </target>
+  
+  <target name="install" depends="package" description="Install Markov4JMeter. (Compiles code and creates jars)">
+    <fixcrlf srcdir="." eol="lf" includes="**/jmeter"/> 
+    <!-- TODO: check if neccessary  -->
+  </target>
+
+  <target name="all" depends="clean,init,install" 
+    description="Default: build from source. Does not create docs."/>
+
+  <!-- TODO: fill -->
+  <!-- list of files needed for a binary distribution (excluding library files) -->
+  <patternset id="dist.binaries">
+    <include name="LICENSE"/>
+    <include name="NOTICE"/>
+    <include name="README"/>
+    <include name="TODO"/>    
+    <include name="MANIFEST"/>
+    <include name="RELEASENOTES"/>
+    <include name="${dest.jar}/Markov4JMeter-*.jar"/>
+    <include name="${examples.dir}/**"/>
+    <include name="${tutorial.pdf}"/>
+  </patternset>
+
+  <patternset id="dist.sources">
+    <include name="LICENSE"/>
+    <include name="NOTICE"/>
+    <include name="README"/>
+    <include name="TODO"/>        
+    <include name="MANIFEST"/>
+    <include name="${src.dir}/**"/>
+    <include name="${src.docs}/**"/>
+    <include name="${src.test}/**"/>
+    <include name="build.xml"/>
+  </patternset>
+  
+  	<!-- Files to be included in full download -->
+	<patternset id="dist_bin_files">
+  		<patternset refid="dist.binaries"/>
+  		<include name="${dest.docs.api}/**"/>
+  	</patternset>
+	<!-- TODO: find way to share images etc between the two document sets -->
+
+	<!-- Files to be included in source download -->
+	<patternset id="dist_src_files">
+  		<patternset refid="dist.sources"/>
+  	</patternset>
+
+	<!-- Invoke with -Dmarkov4jmeter.version=m.n -Duser.name=xyz@apache.org
+	Creates clean build and all documentation
+	Creates runtime and source distributions and site documentation
+	-->
+	<target name="distribution" 
+		depends="clean,install,docs-all,_distribution,pack-site"
+		description="Build Markov4JMeter for end-user distribution (includes site)"/>
+
+	<!-- Internal target -->
+	<target name="_distribution">
+  	<property name="dist.name" value="markov4jmeter-${markov4jmeter.version}"/>
+  	<property name="pack.name" value="${dist.name}"/>
+	<echo>Creating Markov4JMeter distribution ${dist.name}</echo>
+    <mkdir dir="${dist.dir}"/>
+	
+	<!-- Runtime archives -->
+    <tar destfile="${dist.dir}/${pack.name}.tar" longfile="gnu">
+      <tarfileset dir="." prefix="${dist.name}" excludes="${dist.executables}" defaultexcludes="yes">
+        <patternset refid="dist_bin_files"/>
+      </tarfileset>
+      <tarfileset mode="755" includes="${dist.executables}" dir="." prefix="${dist.name}" defaultexcludes="yes"/>
+    </tar>
+
+    <gzip zipfile="${dist.dir}/${pack.name}.tgz" src="${dist.dir}/${pack.name}.tar" />
+      <!-- no longer needed -->
+    <delete file="${dist.dir}/${pack.name}.tar"/>
+    <antcall target="_md5">
+      <param name="path" value="${dist.dir}/${dist.name}.tgz"/>
+    </antcall>
+		
+    <zip  zipfile="${dist.dir}/${pack.name}.zip">
+      <zipfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
+        <patternset refid="dist_bin_files"/>
+      </zipfileset>
+    </zip>
+	<antcall target="_md5">
+		<param name="path" value="${dist.dir}/${dist.name}.zip"/>
+	</antcall>
+
+	<!-- Source archives -->
+    <tar destfile="${dist.dir}/${pack.name}_src.tar" longfile="gnu">
+      <tarfileset dir="." prefix="${dist.name}" excludes="${dist.executables}" defaultexcludes="yes">
+        <patternset refid="dist_src_files"/>
+      </tarfileset>
+      <tarfileset mode="755" includes="${dist.executables}" dir="." prefix="${dist.name}" defaultexcludes="yes"/>
+    </tar>
+
+	<gzip zipfile="${dist.dir}/${pack.name}_src.tgz" src="${dist.dir}/${pack.name}_src.tar" />
+	<!-- no longer needed -->
+	<delete file="${dist.dir}/${pack.name}_src.tar"/>
+	<antcall target="_md5">
+		<param name="path" value="${dist.dir}/${dist.name}_src.tgz"/>
+	</antcall>
+
+	<zip  zipfile="${dist.dir}/${pack.name}_src.zip">
+      <zipfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
+        <patternset refid="dist_src_files"/>
+      </zipfileset>
+    </zip>
+	<antcall target="_md5">
+		<param name="path" value="${dist.dir}/${dist.name}_src.zip"/>
+	</antcall>
+</target>
+
+  <target name="pack-src" depends="init-version">
+    <property name="dist.name" value="jakarta-jmeter-markov-${markov4jmeter.version}"/>
+    <antcall target="_pack-source"/>
+  </target>
+
+  <target name="pack-dist" depends="init-version">
+    <property name="dist.name" value="jakarta-jmeter-markov-${markov4jmeter.version}"/>
+    <antcall target="_pack-libraries"/>
+    <antcall target="_pack-javadoc"/>
+    <antcall target="_pack-source"/>
+  </target>
+
+   <target name="_pack-libraries">
+    <property name="pack.name" value="${dist.name}_lib"/>
+    <mkdir dir="${dist.dir}"/>
+    <tar destfile="${dist.dir}/${pack.name}.tar" longfile="gnu">
+      <tarfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
+        <patternset refid="external.jars"/>
+      </tarfileset>
+    </tar>
+    <gzip zipfile="${dist.dir}/${pack.name}.tgz" src="${dist.dir}/${pack.name}.tar" />
+	<!-- no longer needed -->
+	<delete file="${dist.dir}/${pack.name}.tar"/>
+    <zip  zipfile="${dist.dir}/${pack.name}.zip">
+      <zipfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
+        <patternset refid="external.jars"/>
+      </zipfileset>
+    </zip>
+    </target>
+
+   <target name="_pack-javadoc">
+    <property name="pack.name" value="${dist.name}_api"/>
+    <mkdir dir="${dist.dir}"/>
+    <tar destfile="${dist.dir}/${pack.name}.tar" longfile="gnu">
+      <tarfileset includes="${dest.docs.api}/" dir="." prefix="${dist.name}" defaultexcludes="yes"/>
+    </tar>
+    <gzip zipfile="${dist.dir}/${pack.name}.tgz" src="${dist.dir}/${pack.name}.tar" />
+	<!-- no longer needed -->
+	<delete file="${dist.dir}/${pack.name}.tar"/>
+    <zip  zipfile="${dist.dir}/${pack.name}.zip">
+      <zipfileset includes="${dest.docs.api}/" dir="." prefix="${dist.name}" defaultexcludes="yes"/>
+    </zip>
+    </target>
+
+   <target name="_pack-source">   
+    <property name="pack.name" value="${dist.name}_src"/>
+    <mkdir dir="${dist.dir}"/>
+    <tar destfile="${dist.dir}/${pack.name}.tar" longfile="gnu">
+      <tarfileset dir="." prefix="${dist.name}" excludes="${dist.executables}" defaultexcludes="yes">
+        <patternset refid="dist.sources"/>
+      </tarfileset>
+      <tarfileset mode="755" includes="${dist.executables}" dir="." prefix="${dist.name}" defaultexcludes="yes"/>
+    </tar>
+    <gzip zipfile="${dist.dir}/${pack.name}.tgz" src="${dist.dir}/${pack.name}.tar" />
+	<!-- no longer needed -->
+	<delete file="${dist.dir}/${pack.name}.tar"/>
+    <zip  zipfile="${dist.dir}/${pack.name}.zip">
+      <zipfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
+        <patternset refid="dist.sources"/>
+      </zipfileset>
+    </zip>
+    </target>
+
+
+   <!-- When creating the tars for the web-site, no version prefix directory is added -->
+   <target name="pack-site"  depends="init-version">
+     <property name="dist.name" value="jakarta-jmeter-markov-${markov4JMeter.version}"/>
+     <!-- Note: define pack.name here so it overrides any existing value -->
+     <antcall target="_pack_site_api">
+        <param name="pack.name" value="${dist.name}_api"/>
+     </antcall>
+   </target>
+ 
+   <target name="_pack_site_api">
+    <property name="pack.name" value="${dist.name}_api"/>
+     <mkdir dir="${site.dir}"/>
+     <tar destfile="${site.dir}/${pack.name}.tar" longfile="gnu">
+      <tarfileset dir="${dest.docs.api}" includes="**"  prefix="api" defaultexcludes="yes"/>
+     </tar>
+    <gzip zipfile="${site.dir}/${pack.name}.tgz" src="${site.dir}/${pack.name}.tar" />
+	<!-- no longer needed -->
+	<delete file="${dist.dir}/${pack.name}.tar"/>
+     <!-- no point in creating Zip version as well -->
+    </target>
+    
+<!-- 
+    Utility target to create MD5 checksums in standard format (with *filename) 
+    Usage:
+	<antcall target="_md5">
+		<param name="path" value="archive.jar|zip|gz"/>
+	</antcall>
+-->
+
+    <target name="_md5" unless="md5.skip">
+    	<echo message="Creating MD5 for ${path}"/>
+		<basename property="_base" file="${path}"/>
+   	    <checksum file="${path}" property="md5"/>
+   	    <echo message="${md5} *${_base}" file="${path}.md5"/>
+    </target>
+	
+  <target name="clean" description="Clean up to force a build from source.">
+    <delete quiet="true" verbose="false">
+        <fileset dir="${build.dir}" />
+    </delete>
+    <delete quiet="true" verbose="false">
+        <fileset dir="${dist.dir}"/>
+    </delete>
+    <delete dir="${dest.docs.api}" verbose="false"/>
+    <delete dir="${site.dir}" verbose="false"/>
+  </target>
+
+  <target name="javadoc" depends="docs-api" description="Alias for
+  docs-api target" />
+
+  <target name="docs-api" depends="init-version" description="Generate the API documentation.">
+  	<tstamp>
+      <format property="THISYEAR" pattern="yyyy"/>
+    </tstamp>
+    <mkdir dir="${dest.docs.api}"/>
+    <javadoc sourcepathref="srcpaths"
+    additionalparam="-breakiterator" 
+    destdir="${dest.docs.api}" 
+    protected="yes" author="yes" version="yes" 
+       doctitle="Markov4JMeter API Specification" 
+    windowtitle="Markov4JMeter API Specification" 
+    header="&lt;b&gt;Markov4JMeter&lt;/b&gt;&lt;br&gt;&lt;font size='-1'&gt;${docversion}&lt;/font&gt;" bottom="Copyright &#xA9; ${THISYEAR} Andre van Hoorn. All Rights Reserved."
+    packagenames="net.voorn.markov4jmeter.*" >
+      <classpath refid="classpath"/>
+      <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+      <link href="http://jakarta.apache.org/jmeter/api/"/>
+    </javadoc>
+  </target>
+
+<!--
+	Run Doccheck: See http://java.sun.com/j2se/javadoc/doccheck/docs/DocCheck.html
+	Download the doclet, and put the jar in lib/opt.
+	Output is in reports/ directory
+-->
+<target name="docs-check">
+    <javadoc sourcepathref="srcpaths"
+    destdir="reports" 
+    docletpath="${lib.opt}/doccheck.jar"
+    packagenames="net.voorn.markov4jmeter/.*">
+      <classpath refid="classpath"/>
+      <doclet name="com.sun.tools.doclets.doccheck.DocCheck">
+      	<!-- 
+      		-execDepth: 1=org.* 2=org.apache.* 3+=org.apache.jmeter.*
+      		-evident does not seem to work
+      	 -->
+      	<param name="-execDepth" value="3"/>
+      	<param name="-evident" value="4"/>
+      </doclet>
+    </javadoc>
+</target>
+
+  <target name="docs-all" depends="docs-api" 
+  	description="Generate documentation. (site, printable, api)"/>
+
+</project>

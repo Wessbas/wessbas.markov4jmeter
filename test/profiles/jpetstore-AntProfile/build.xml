@@ -1,0 +1,259 @@
+<?xml version="1.0"?>
+
+<project name="jmeter-experiment" default="all">
+    
+    <property file="build.properties" />
+    
+    <!-- In order to use environment variable VARNAME by env.VARNAME: -->
+    <property environment="env" />
+    
+    <property name="log.dir" value="log/" />
+    <property name="log.jmeter.jmeterlog" value="${log.dir}/jmeter.log" />
+    <property name="log.jmeter.resultsJtl" value="${log.dir}/JMeterResults.jtl" />
+    <property name="log.jmeter.resultsHtml" value="${log.dir}/JMeterResults.html" />
+    <property name="log.jmeter.errors" value="${log.dir}/error.log" />
+    <property name="log.jmeter.assertionErrors" value="${log.dir}/assertionErrors.log" />
+
+    <property name="log.accesslog" value="${log.dir}/accesslog.csv" />
+    
+    <property name="sql.dir" value="sql/" />
+    <property name="sql.resetDataload" value="${sql.dir}/jpetstore-reset-dataload.sql" />
+    <property name="sql.createUsers" value="${sql.dir}/jpetstore-create-users.sql.sh" />
+    
+    <property name="tmp.dir" value="tmp/" />
+    <property name="tmp.wgetout" value="/tmp/wget.out" />
+    
+    <property name="plots.dir" value="plots/" />
+    <property name="plots.accesslog.dir" value="${plots.dir}/accesslog/" />
+    
+    <property name="script.dumpJMXInfo" value="bin/dumpJMXInfo.sh" />
+    <property name="script.report.accesslog" value="bin/accesslog_plot.sh" />
+    
+    <property name="tomcat.catalina.sh" value="${TOMCATHOME}/bin/catalina.sh" />
+    <property name="tomcat.server.xml" value="${TOMCATHOME}/conf/server.xml" />
+    <property name="tomcat.accesslog" value="${TOMCATHOME}/logs/access_log.txt" />
+    
+    <property name="USERNAME_PREFIX" value="" />
+    <property name="USER_NUM" value="1000" />
+    <property name="USER_NUM_MAX" value="999" /> <!-- USER_NUM-1 -->
+
+    <!-- Should report include response data for failures? -->
+    <property name="show-data" value="n"/>
+    
+    <property name="format" value="2.1"/>
+    
+    <condition property="style_version" value="">
+        <equals arg1="${format}" arg2="2.0"/>
+    </condition>
+    
+    <condition property="style_version" value="_21">
+        <equals arg1="${format}" arg2="2.1"/>
+    </condition>
+    
+    <condition property="funcMode">
+        <equals arg1="${show-data}" arg2="y"/>
+    </condition>
+    
+    <condition property="funcMode" value="false">
+        <not>
+            <equals arg1="${show-data}" arg2="y"/>
+        </not>
+    </condition>
+    
+    <taskdef
+        name="jmeter"
+        classpath="ant-jmeter.jar"
+        classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask"/>
+    
+    
+    <target name="initVars">
+        <tstamp>
+            <format property="date" pattern="yyyy-MM-dd"/>
+        </tstamp>
+    </target>
+    
+    <target name="clean">
+        <delete>
+            <fileset dir="${log.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </delete>
+        <delete dir="${tmp.dir}" />
+        <delete>
+            <fileset dir="${plots.dir}">
+                <include name="**/*"/>
+            </fileset>
+        </delete>
+    </target>
+    
+    <target name="tomcat.dumpConfig">
+        <!-- check whether aspect weaving enabled -->
+        <exec executable="ssh">
+            <arg value="${SSH_USER}@${SRVHOST}" />
+            <arg value="test -f ${tomcat.catalina.sh} &amp;&amp; if grep -e '^[^#].*javaagent.*aspectjweaver.jar' ${tomcat.catalina.sh} &gt; /dev/null; then echo Aspectweaving ENABLED; else echo Aspectweaving DISABLED; fi" />
+        </exec>
+        <!-- check whether access logging enabled -->
+        <exec executable="ssh">
+            <arg value="${SSH_USER}@${SRVHOST}" />
+            <arg value="test -f ${tomcat.server.xml} &amp;&amp; if grep --before-context=3 '%s %b %S %D' ${tomcat.server.xml} | grep '&lt;!\-\-'  &gt; /dev/null &amp;&amp;  grep --after-context=2 '%s %b %S %D' ${tomcat.server.xml} | grep '\-\-&gt;'; then echo Access logging DISABLED; else echo Access logging ENABLED; fi" />
+        </exec>
+    </target>
+      
+    <!-- Requires the following parameters to be passed:
+         testPlan:   Path to Test Plan file (.jmx)
+         numThreads: Size of JMeter thread pool
+         duration:   Experiment duration in seconds
+         rampUp:     Rampup period in seconds
+    -->
+    <target name="jmeter.runTestPlan">
+        <echo>Running Test Plan '${testPlan}'</echo>
+        <exec executable="${script.dumpJMXInfo}" failonerror="true">
+            <arg value="-f" /><arg value="${testPlan}" />
+            <arg value="-t" /><arg value="${numThreads}" />
+            <arg value="-d" /><arg value="${duration}" />
+            <arg value="-r" /><arg value="${rampup}" />
+            <arg value="-h" /><arg value="${SRVHOST}" />
+        </exec>
+        
+        <jmeter
+            failureProperty="jmeter.fail" 
+            jmeterhome="${jmeterhome}"
+            testplan="${testPlan}"
+            jmeterlog="${log.jmeter.jmeterlog}">
+            <!-- resultlog="${log.jmeter.resultsJtl}" -->
+            
+            <!-- base heap size -->
+            <jvmarg value="-Xms768m" /> 
+            <jvmarg value="-Xmx768m" />
+            
+            <!-- eden size -->
+            <jvmarg value="-XX:NewSize=256m" /> 
+            <jvmarg value="-XX:MaxNewSize=256m" /> 
+            
+            <!-- Force suitable defaults -->
+            <property name="jmeter.save.saveservice.output_format" value="xml"/>
+            <property name="jmeter.save.saveservice.assertion_results" value="all"/>
+            <property name="jmeter.save.saveservice.bytes" value="true"/>
+            <property name="file_format.testlog" value="${format}"/>
+            <property name="jmeter.save.saveservice.response_data.on_error" value="${funcMode}"/>
+            
+            <property name="SRVHOST" value="${SRVHOST}" />
+            <property name="SRVPORT" value="${SRVPORT}" />
+            <property name="SRVBASEPATH" value="${SRVBASEPATH}" />
+            <property name="NUMTHREADS" value="${numThreads}" />
+            <property name="DURATION" value="${duration}" />
+            <property name="RAMPUP" value="${rampup}" />
+            
+            <property name="maxUserId" value="${USER_NUM_MAX}" />
+            
+            <property name="errorlog" value="${log.jmeter.errors}" />
+            <property name="assertionerrors" value="${log.jmeter.assertionErrors}" />
+        </jmeter>
+        
+        <fail message="JMeter failed">
+            <condition>
+                <or>
+                    <istrue value="${jmeter.fail}"/>
+                    <length file="${log.jmeter.assertionErrors}" when="greater" length="0" />
+                    <length file="${log.jmeter.errors}" when="greater" length="0" />
+                </or>
+            </condition>
+        </fail>        
+    </target>
+    
+    <target name="tomcat.assertNoAccesslog" depends="">
+        <exec executable="ssh" failonerror="true">
+            <arg value="${SSH_USER}@${SRVHOST}" />
+            <arg value="if test -s ${tomcat.accesslog}; then echo ${tomcat.accesslog} exists.; echo Call \'ant tomcat.rmAccesslog\' to remove it.; false; else true; fi" />
+        </exec>
+    </target>
+    
+    <target name="tomcat.rmAccesslog" depends="">
+        <exec executable="ssh" failonerror="true">
+            <arg value="${SSH_USER}@${SRVHOST}" />
+            <arg value="if test -s ${tomcat.accesslog}; then echo ${tomcat.accesslog} exists.; rm  ${tomcat.accesslog}; else true; fi" />
+        </exec>
+    </target>
+    
+    <target name="db.init">
+        <exec command="bash -c &quot; mysql --host=${DBHOST} --user=${DBUSER} --password=${DBPASS} &lt; ${sql.resetDataload}&quot;" />
+        <exec command="bash -c &quot; ${sql.createUsers} ${USER_NUM} ${USERNAME_PREFIX} | mysql --host=${DBHOST} --user=${DBUSER} --password=${DBPASS}&quot;" />
+    </target>
+
+    
+    <target name="accesslog.fetch" depends=""> 
+        <!--<scp file="localhost:/tmp/bla" todir="."/>-->
+        <echo>Accesslog: ${tomcat.accesslog}</echo>
+        <exec executable="scp" failonerror="true">
+            <arg value="${SSH_USER}@${SRVHOST}:${tomcat.accesslog}" />
+            <arg value="${log.accesslog}" />
+        </exec>
+        <exec executable="ssh" failonerror="true">
+            <arg value="${SSH_USER}@${SRVHOST}" />
+            <arg value="rm ${tomcat.accesslog}" />
+        </exec>
+    </target>
+    
+    <target name="properties.fetch" depends="">
+        <copy file="build.properties" todir="${log.dir}" />
+    </target>    
+    
+    <target name="report.jtl" depends="">
+        <xslt
+            force="true"
+            in="${log.jmeter.resultsJtl}"
+            out="${log.jmeter.resultsHtml}"
+            style="${jmeterhome}/extras/jmeter-results-detail-report${style_version}.xsl">
+            <param name="showData" expression="${show-data}"/>
+        </xslt>
+    </target>  
+    
+    <target name="report.accesslog" depends="">
+        <mkdir dir="${plots.accesslog.dir}" />
+        <exec executable="${script.report.accesslog}" failonerror="true" />
+    </target>  
+    
+    <target name="init">
+        <echo>Make sure you restarted the server ...</echo>
+        <mkdir dir="${tmp.dir}" />
+    </target>
+    
+    <target name="preamble.run" depends="init">
+        <antcall target="tomcat.dumpConfig" />
+        <antcall target="tomcat.rmAccesslog" />
+    </target>        
+       
+    <target name="main.run" depends="init">
+        <echo>Running Main Test Plan '${MAINJMX}'</echo>
+        
+        <antcall target="db.init"/>
+        
+        <antcall target="jmeter.runTestPlan">
+            <param name="testPlan" value="${MAINJMX}"/>
+            <param name="numThreads" value="${MAINNUMTHREADS}"/>
+            <param name="duration" value="${MAINDURATION}"/>
+            <param name="rampup" value="${MAINRAMPUP}"/>
+        </antcall>
+    </target>
+    
+    <target name="logs.fetch">
+        <antcall target="properties.fetch" />
+        <antcall target="accesslog.fetch" />
+    </target>
+    
+    <target name="report">
+        <antcall target="report.accesslog" />
+    </target>
+    
+    <target name="all" depends="">
+        <antcall target="clean" />
+        <antcall target="init" />
+        
+        <antcall target="preamble.run" />
+        <antcall target="main.run" />
+        
+        <antcall target="logs.fetch" />
+        <antcall target="report" />
+    </target>
+    
+</project>

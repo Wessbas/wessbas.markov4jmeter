@@ -1,0 +1,5 @@
+,"Index","Sign On","View Category","Sign Off","$"
+"Index*",0,0.2,0.8,0,0
+"Sign On",0.2,0,0.6,0.2,0
+"View Category",0,0.2,0.6,0.2,1
+"Sign Off",0,0,0,0,1

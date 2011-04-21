@@ -1,0 +1,8 @@
+import org.apache.jmeter.util.JMeterUtils;
+
+long startMs = Long.parseLong(JMeterUtils.getPropDefault("TEST.START.MS",""));
+long curMs = System.currentTimeMillis();
+double expMin = (curMs-startMs)/(double)(1000*60);
+
+/* allows an additional thread every 15 seconds */
+return (int)Math.ceil(expMin*4);

@@ -1,0 +1,10 @@
+#accesslog <- read.table (file="log/accesslog_filtered.csv", header=TRUE, sep=' ', quote='"\'', dec='.',  na.strings = "NA", nrows = -1, skip =  0, check.names = TRUE, fill = FALSE, strip.white = FALSE, blank.lines.skip = TRUE, comment.char="#")
+
+pdf(requests_fn,height=height,width=width)
+request_list=split(accesslog["path"],accesslog["path"])
+frequencies=sapply(request_list,nrow)
+barplot(frequencies,main="Request Frequencies",las=3,col="white")
+#hist(as.vector(frequencies), breaks=c(0:4),right=FALSE,freq=FALSE,main="Request Frequencies",xlab="Request")
+dev.off()
+rm(request_list)
+rm(frequencies)

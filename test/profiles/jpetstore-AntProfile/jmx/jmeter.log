@@ -1,0 +1,38 @@
+2008/01/15 16:17:54 INFO  - jmeter.util.JMeterUtils: Setting Locale to de_DE 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Loading user properties from: /home/voorn/svn_work/jmeter/jakarta-jmeter-2.3/bin/user.properties 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Loading system properties from: /home/voorn/svn_work/jmeter/jakarta-jmeter-2.3/bin/system.properties 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Copyright (c) 1998-2007 The Apache Software Foundation 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Version 2.3.20080103 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: java.version=1.6.0_03 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: os.name=Linux 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: os.arch=i386 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: os.version=2.6.22-14-generic 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: file.encoding=UTF-8 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Default Locale=Deutsch (Deutschland) 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: JMeter  Locale=Deutsch (Deutschland) 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: JMeterHome=/home/voorn/svn_work/jmeter/jakarta-jmeter-2.3 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: user.dir  =/home/voorn/svn_work/Markov4JMeter/trunk/test/profiles/jpetstore-ExpProfile/jmx 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: PWD       =/home/voorn/svn_work/Markov4JMeter/trunk/test/profiles/jpetstore-ExpProfile/jmx 
+2008/01/15 16:17:54 INFO  - jmeter.JMeter: Loaded icon properties from org/apache/jmeter/images/icon.properties 
+2008/01/15 16:17:55 ERROR - jmeter.gui.action.Help: Couldn't load help file java.io.FileNotFoundException: /home/voorn/svn_work/jmeter/jakarta-jmeter-2.3/printable_docs/usermanual/component_reference.html (No such file or directory) 
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Cannot find .className property for htmlParser, using default 
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/html is  
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for application/xhtml+xml is  
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for application/xml is  
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/xml is  
+2008/01/15 16:17:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser 
+2008/01/15 16:17:56 INFO  - jmeter.protocol.http.sampler.HTTPSampler: Maximum connection retries = 10 
+2008/01/15 16:17:56 WARN  - jmeter.gui.util.MenuFactory: Missing jar? Could not create org.apache.jmeter.visualizers.MailerVisualizer. java.lang.NoClassDefFoundError: javax/mail/MessagingException 
+2008/01/15 16:17:56 INFO  - jmeter.samplers.SampleResult: Note: Sample TimeStamps are START times 
+2008/01/15 16:17:56 INFO  - jmeter.samplers.SampleResult: sampleresult.default.encoding is set to ISO-8859-1 
+2008/01/15 16:18:01 INFO  - jmeter.gui.action.Load: Loading file: /home/voorn/svn_work/Markov4JMeter/trunk/test/profiles/jpetstore-ExpProfile/jmx/TestPlan.jmx 
+2008/01/15 16:18:01 INFO  - jmeter.save.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2 
+2008/01/15 16:18:01 INFO  - jmeter.save.SaveService: Using SaveService properties file encoding UTF-8 
+2008/01/15 16:18:01 INFO  - jmeter.save.SaveService: Using SaveService properties file version 545311 
+2008/01/15 16:18:01 WARN  - jmeter.save.SaveService: Could not set up alias MailerModel java.lang.NoClassDefFoundError: javax/mail/Message 
+2008/01/15 16:18:01 INFO  - jmeter.protocol.http.sampler.HTTPSampler2: Local host = pc-vanhoorn 
+2008/01/15 16:18:01 WARN  - jmeter.save.SaveService: Could not set up alias JMSSampler java.lang.NoClassDefFoundError: javax/jms/JMSException 
+2008/01/15 16:18:01 WARN  - jmeter.save.SaveService: Could not set up alias SubscriberSampler java.lang.NoClassDefFoundError: javax/jms/MessageListener 
+2008/01/15 16:18:01 WARN  - jmeter.save.SaveService: Could not set up alias MailerVisualizer java.lang.NoClassDefFoundError: javax/mail/MessagingException 
+2008/01/15 16:18:01 INFO  - jmeter.save.SaveService: Using SaveService properties version 1.8 
+2008/01/15 16:18:01 INFO  - jmeter.save.SaveService: All converter versions present and correct 

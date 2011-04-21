@@ -1,0 +1,38 @@
+The load and performance test tool (mainly for Web-sites) Apache JMeter
+(http://jakarta.apache.org/jmeter/) doesn't support the definition of
+probabilistic user behavior, i.e. given a currently visited Web site, the
+next site to be requested is chosen based on configurable probability values.
+JMeter solely provides a random controller with uniformly distributed
+probabilities.
+
+A Markov Chain is a formal model having a number of states and transitions.
+Transitions between states are annotated with probabilities. The sum of
+probabilities of outgoing transitions must be 1. 
+
+We added a new Controller to JMeter, supporting the test plan execution
+based on probabilistic user behavior(s) itself based on the Markov chain
+concept (as well as concepts known from finite state machines, e.g. guards
+and actions). Moreover, our extension enables the variation of the number of
+active parallel user sessions (threads) during test run, to be specified by
+user-definable mathematic formulae. 
+
+###
+#Install JMeter.Markov
+###
+
+see tutorial "doc/tutorial.pdf" from binary distribution
+
+###
+# Build JMeter.Markov
+###
+To build JMeter.Markov you need to perform the following steps
+
+1.) Download the source archive
+2.) Add the following Jars (or symbolic links) which reside within JMeter's
+    lib/ and lib/ext directoriesto to the lib/opt directory. They are solely 
+    needed during compilation.
+    - jakarta-jmeter-2.2/lib/ext/ApacheJMeter_core.jar 
+    - jorphan.jar
+    - logkit-1.2.jar
+    - js.jar
+3.) Call 'ant'

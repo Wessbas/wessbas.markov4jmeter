@@ -1,0 +1,9 @@
+import org.apache.jmeter.util.JMeterUtils;
+
+private static double numSessions (double x){
+  return 8*Math.cos((x+4.5)*2)+20;
+}
+
+long startMs = Long.parseLong(JMeterUtils.getPropDefault("TEST.START.MS",""));
+float expMin = (float)(System.currentTimeMillis()-startMs)/(double)(1000*60);
+return (int) numSessions(expMin);
