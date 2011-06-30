@@ -17,22 +17,23 @@ active parallel user sessions (threads) during test run, to be specified by
 user-definable mathematic formulae. 
 
 ###
-#Install JMeter.Markov
+# Install Markov4JMeter
 ###
 
-see tutorial "doc/tutorial.pdf" from binary distribution
+see tutorial "doc/tutorial.pdf" from the binary distribution
 
 ###
-# Build JMeter.Markov
+# Build Markov4JMeter
 ###
-To build JMeter.Markov you need to perform the following steps
+To build Markov4JMeter you need to perform the following steps:
 
 1.) Download the source archive
-2.) Add the following Jars (or symbolic links) which reside within JMeter's
-    lib/ and lib/ext directoriesto to the lib/opt directory. They are solely 
-    needed during compilation.
-    - jakarta-jmeter-2.2/lib/ext/ApacheJMeter_core.jar 
-    - jorphan.jar
-    - logkit-1.2.jar
-    - js.jar
-3.) Call 'ant'
+2.) Call 'ant'
+
+Remark:
+The lib/opt directory contains the following Jars needed for compilation only:
+- ApacheJMeter_core.jar 
+- jorphan.jar
+- logkit-<version>.jar
+- js-<version>.jar
+These Jars were taken from the most recent JMeter release archive.

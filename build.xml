@@ -96,23 +96,7 @@
     <include name="${lib.dir}/*.html"/>
     <include name="${lib.dir}/LICENSE*.*"/>
   </patternset>
-
-  <!--
-  Optional jars, not included in distribution.
-  Any such jars need to be downloaded separately.
-  These can be put into ${lib.dir} or ${lib.opt}
-  - both of these are included in the build classpath
-  
-  Any jars put into ${lib.dir} will be included in
-  the classpath used by Markov4JMeter
-  Jars in ${lib.opt} are NOT normally included by Markov4JMeter
-  
-  Placing an optional jar in ${lib.opt} means that it
-  will be included in the build classpath, but it will
-  not be included in the runtime classpath. This is intended
-  for testing Markov4JMeter without the optional Jar file(s).
-  -->
-  
+ 
   <!-- Build classpath (includes the optional jar directory) -->
   <!-- Exclude the htmlparser jars to prevent clashes between versions -->
   <path id="classpath">
@@ -204,7 +188,7 @@
     <include name="${examples.dir}/**"/>
     <include name="${tutorial.pdf}"/>
   </patternset>
-
+	
   <patternset id="dist.sources">
     <include name="LICENSE"/>
     <include name="NOTICE"/>
@@ -214,6 +198,7 @@
     <include name="${src.dir}/**"/>
     <include name="${src.docs}/**"/>
     <include name="${src.test}/**"/>
+  	<include name="${lib.opt}/*"/>
     <include name="build.xml"/>
   </patternset>
   
