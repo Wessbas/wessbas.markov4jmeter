@@ -42,6 +42,10 @@
   <property name="src.test" value="test/src"/>
   <property name="src.junit" value="src/junit"/>
 
+  <!-- Eclipse template files -->
+  <property name="eclipse-classpath.sample" value="eclipse-classpath.sample"/>
+  <property name="eclipse-project.sample" value="eclipse-project.sample"/>
+	
   <!-- Where the examples live -->
   <property name="examples.dir" value="examples"/>
 
@@ -255,6 +259,8 @@
 
 	<!-- Source archives -->
     <tar destfile="${dist.dir}/${pack.name}_src.tar" longfile="gnu">
+	  <tarfileset file="${eclipse-project.sample}" fullpath="${dist.name}/.project" />
+	  <tarfileset file="${eclipse-classpath.sample}" fullpath="${dist.name}/.classpath" />
       <tarfileset dir="." prefix="${dist.name}" excludes="${dist.executables}" defaultexcludes="yes">
         <patternset refid="dist_src_files"/>
       </tarfileset>
@@ -269,6 +275,8 @@
 	</antcall>
 
 	<zip  zipfile="${dist.dir}/${pack.name}_src.zip">
+	<zipfileset file="${eclipse-project.sample}" fullpath="${dist.name}/.project" />
+	<zipfileset file="${eclipse-classpath.sample}" fullpath="${dist.name}/.classpath" />
       <zipfileset dir="." prefix="${dist.name}" defaultexcludes="yes">
         <patternset refid="dist_src_files"/>
       </zipfileset>
