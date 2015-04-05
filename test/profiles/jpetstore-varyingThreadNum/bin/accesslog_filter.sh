@@ -1,1 +1,1 @@
-../../../bin/accesslog_filter.sh
+link ../../../bin/accesslog_filter.sh

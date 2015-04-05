@@ -1,1 +1,1 @@
-../../../bin/accesslog_plot.sh
+link ../../../bin/accesslog_plot.sh

@@ -125,8 +125,11 @@ public class ApplicationStateGui extends org.apache.jmeter.control.gui.AbstractC
         commentPanel = new JTextArea();
         JLabel label = new JLabel(JMeterUtils.getResString("testplan_comments"));
         label.setLabelFor(commentPanel);
-        panel.add(label);
-        panel.add(commentPanel);
+        // JMeter GUI components already have a text input field by default;
+        // leave the lines above as they are, otherwise the comment panel will
+        // be packed to minimum size -> components will be hidden;
+        //        panel.add(label);
+        //        panel.add(commentPanel);
         return panel;
     }
     
@@ -161,7 +164,11 @@ public class ApplicationStateGui extends org.apache.jmeter.control.gui.AbstractC
         setLayout(new BorderLayout(10, 10));
         setBorder(makeBorder());
         
-        add(createCommentPanel(), BorderLayout.NORTH);
+        // JMeter GUI components already have a text input field by default,
+        // so just add a default title panel instead;
+        //add(makeTitlePanel(), BorderLayout.NORTH);
+         add(createCommentPanel(), BorderLayout.NORTH);
+
         //add(createIdPanel(), BorderLayout.SOUTH);
         createIdPanel();
         add(createTransitionsPanel(), BorderLayout.CENTER);

@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
+ *
  */
 
 package net.voorn.markov4jmeter.control;
@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.voorn.markov4jmeter.control.gui.GuiLogger;
+
 import org.apache.jmeter.testelement.property.CollectionProperty;
 import org.apache.jmeter.testelement.property.PropertyIterator;
 import org.apache.jmeter.testelement.property.TestElementProperty;
@@ -31,44 +33,52 @@ import org.apache.log.Logger;
 
 /**
  * This class represents a so-called behavior mix, i.e. a set of user behaviors
- * each associated with their relative frequency of occurence. 
+ * each associated with their relative frequency of occurence.
  *
  * For example, a behavior mix may contain the user behaviors "Heavy Buyer" and
  * "Browser" with the associated relative frequencies 0.2 and 0.8.
  *
  * At present, an instance of this class de-facto represents the behavior mix
  * controller which returns a behavior model its method <i>getBehavior</i> is
- * called. 
+ * called.
  *
  * @author Andr&eacute; van Hoorn
  */
 public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement implements Serializable {
     /** Logger for this class. */
     private static Logger logger = LoggingManager.getLoggerForClass();
-    
+
     /** Random number generator to be used within this class. */
     protected static java.util.Random rand = new java.util.Random();
-    
+
     /** Property name used to store the list of behavior model entries. */
     public static final String BEHAVIORMIX = "UserBehaviorMix.behaviorEntries";
-    
-    /** 
+
+    /**
      * Contains initialized behavior models (during test execution)
      * Write access to this list must be synchronized since during test execution
-     * an instance is used by multiple threads! 
+     * an instance is used by multiple threads!
      */
     private transient List<BehaviorMixEntry> behaviorList = new ArrayList();
-    
+
     /** Whether instance initialized (i.e. method initialize() has been called) */
     private boolean initialized = false;
-    
+
+    private static GuiLogger guiLogger;
+
+
     /**
      * Create a new empty behavior mix.
      */
     public BehaviorMix() {
         setProperty(new CollectionProperty(BEHAVIORMIX, new ArrayList()));
     }
-    
+
+    public static void setGuiLogger (GuiLogger guiLogger) {
+
+        BehaviorMix.guiLogger = guiLogger;
+    }
+
     /**
      * Get the behavior mix.
      *
@@ -77,7 +87,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public CollectionProperty getBehaviorMix() {
         return (CollectionProperty) getProperty(BEHAVIORMIX);
     }
-    
+
     /**
      * Clear the behavior mix.
      */
@@ -89,7 +99,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
         if (this.behaviorList != null) // required for distributed mode
             this.behaviorList.clear();
     }
-    
+
     /**
      * Set the list of behavior entries. Any existing entries will be lost.
      *
@@ -98,19 +108,19 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public void setBehaviorMix(List behaviorEntries) {
         setProperty(new CollectionProperty(BEHAVIORMIX, behaviorEntries));
     }
-    
+
     /**
      * Returns the behavior mix as a List.
-     * 
+     *
      * @return the behavior mix as a list.
      */
     public List<BehaviorMixEntry> getBehaviorMixAsList(){
-       return this.behaviorList; 
+       return this.behaviorList;
     }
-    
+
     /**
-     * Returns the behavior mix as a Map. 
-     * 
+     * Returns the behavior mix as a Map.
+     *
      * Each behavior name is used as the entrie's key.
      *
      * @return the behavior mix map.
@@ -124,7 +134,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
         }
         return behaviorMixMap;
     }
-    
+
     /**
      * Add a new behavior entry.
      *
@@ -137,7 +147,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
         }
         getBehaviorMix().addItem(newBehv);
     }
-    
+
     /**
      * Add a new behavior entry with the given name, relative frequency,
      * and filename.
@@ -149,7 +159,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public void addBehaviorEntry(String name, double rfreq, String filename) {
         addBehaviorEntry(new BehaviorMixEntry(name, rfreq, filename));
     }
-    
+
     /**
      * Get a PropertyIterator of the behavior entries.
      *
@@ -158,7 +168,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public PropertyIterator iterator() {
         return getBehaviorMix().iterator();
     }
-    
+
     /**
      * Create a string representation of the behavior mix.
      *
@@ -177,7 +187,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
         }
         return str.toString();
     }
-    
+
     /**
      * Remove the specified behavior entry from the mix.
      *
@@ -188,7 +198,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
             getBehaviorMix().remove(row);
         }
     }
-    
+
     /**
      * Remove the specified behavior entry from the list.
      *
@@ -203,7 +213,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
             }
         }
     }
-    
+
     /**
      * Remove the behavior entry with the specified name.
      *
@@ -218,23 +228,23 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
             }
         }
     }
-    
+
     /**
      * Remove all behavior entries from the mix.
      */
     public void removeAllBehaviorEntries() {
         getBehaviorMix().clear();
     }
-    
+
     /**
      * Add a new empty behavior entry to the list. The new entry will have the
-     * empty string as its name a relative frequency of 0.0, and the empty 
+     * empty string as its name a relative frequency of 0.0, and the empty
      * String as its filename.
      */
     public void addEmptyBehaviorEntry() {
         addBehaviorEntry(new BehaviorMixEntry("", 0.0, ""));
     }
-    
+
     /**
      * Get the number of entries in the mix.
      *
@@ -243,7 +253,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public int getBehaviorCount() {
         return getBehaviorMix().size();
     }
-    
+
     /**
      * Get a single behavior entry by index.
      *
@@ -253,40 +263,84 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
      */
     public BehaviorMixEntry getBehaviorEntry(int row) {
         BehaviorMixEntry behv = null;
-        
+
         if (row < getBehaviorMix().size()) {
             behv = (BehaviorMixEntry) getBehaviorMix().get(row).getObjectValue();
         }
-        
+
         return behv;
     }
-    
+
     /**
      * Initializes the behavior models (during test execution).
      *
-     * The behaior models are read from file. The map passed as parameter is 
-     * used to map the state names contained within the file to the 
+     * The behavior models are read from file. The map passed as parameter is
+     * used to map the state names contained within the file to the
      * ApplicationStates.
      *
      * @param stateNames2Ids map mapping all ApplicationState names to their ID.
      * @throws BehaviorException when an error during initialization occurs.
      */
-    public synchronized void initialize(Map stateNames2Ids) throws BehaviorException{
+    public synchronized void initialize(Map stateNames2Ids) throws BehaviorException {
+
+        this.initialized = false;
+
         this.behaviorList.clear();
         int numBehaviors = this.getBehaviorCount();
-        
+
+        int numberOfThinkTimeBehaviors = 0;
         for (int i=0; i<numBehaviors; i++){
-            BehaviorMixEntry behavior = 
+            BehaviorMixEntry behavior =
                     (BehaviorMixEntry) this.getBehaviorEntry(i).clone();
-            
+
             behavior.initializeModel(stateNames2Ids);
             this.behaviorList.add(behavior);
+
+            if (behavior.usesThinkTimes()) {
+
+                numberOfThinkTimeBehaviors++;
+            }
         }
+
+        if (numberOfThinkTimeBehaviors > 0 &&
+            numberOfThinkTimeBehaviors < numBehaviors) {
+
+            final String message = "Inconsistent mix of behavior models; some models use think times, some do not.";
+
+            this.error(message);
+        }
+
         this.initialized = true;
     }
-    
+
     /**
-     * Returns a behavior model based on the behavior mix. 
+     * Helping function for error handling; throws a BehaviorException for
+     * stopping the current process. Furthermore, the error message will be
+     * logged in the dedicated logging window of the Markov Controller.
+     *
+     * @param format     <code>String</code> template for being formatted.
+     * @param arguments  Arguments for being inserted into the template.
+     *
+     * @throws BehaviorException
+     *     will be always thrown, includes the error message.
+     */
+    private void error (final String format, final Object... arguments)
+            throws BehaviorException {
+
+        // add filename to the given information;
+        final String message =
+                "Behavior Mix problem -- " + String.format(format, arguments);
+
+        if (BehaviorMix.guiLogger != null) {
+
+            BehaviorMix.guiLogger.error(message);
+        }
+
+        throw new BehaviorException(message);
+    }
+
+    /**
+     * Returns a behavior model based on the behavior mix.
      *
      * @return the behavior model and null if no behavior chosen (list of
      *         behaviors empty or all entries have a relative frequency of 0.0).
@@ -295,9 +349,9 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
     public BehaviorMixEntry getBehavior() throws BehaviorException {
         List<Double> cumProbList = new ArrayList();
         double curCumProb = 0.0;
-        
+
         for (int i=0; i<this.behaviorList.size(); i++){
-            /* add all to have the same number of entries in 
+            /* add all to have the same number of entries in
              * both lists */
             curCumProb+=this.behaviorList.get(i).getRFreq();
             cumProbList.add(curCumProb);
@@ -317,7 +371,7 @@ public class BehaviorMix extends org.apache.jmeter.config.ConfigTestElement impl
             behavior = this.behaviorList.get(i+1);
         }
         //System.out.println("-> Behavior: " + behavior.getBName());
-        
+
         return behavior;
     }
 }
