@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="lib/opt/ApacheJMeter_core.jar"/>
+	<classpathentry kind="lib" path="lib/opt/jorphan.jar"/>
+	<classpathentry kind="lib" path="lib/opt/js-1.6R5.jar"/>
+	<classpathentry kind="lib" path="lib/opt/logkit-2.0.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="build"/>
+</classpath>
