@@ -33,7 +33,7 @@ public class Markov4JMeterVersion {
 	 * JMeterUtils This ensures that JMeterUtils always gets the correct
 	 * version, even if it is not re-compiled during the build.
 	 */
-	private static final String VERSION = "1.0.20140405";
+	private static final String VERSION = "1.0.20150516";
 
 	static final String COPYRIGHT = "Copyright (c) 2007 Andre van Hoorn";
 
