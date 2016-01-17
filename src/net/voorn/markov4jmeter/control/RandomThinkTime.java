@@ -7,18 +7,15 @@ import java.util.Random;
  *
  * @author Eike Schulz (esc@informatik.uni-kiel.de)
  */
-public class NormallyDistributedThinkTime extends ThinkTime {
+public class RandomThinkTime extends ThinkTime {
 
     /** Function descriptor which indicates the distribution function type.
      *  This must be <code>protected</code> for the {@link ThinkTimeParser},
      *  which needs access to it for identifying think time types. */
-    protected final static String FUNCTION_DESCRIPTOR = "norm";
+    protected final static String FUNCTION_DESCRIPTOR = "rand";
 
     /** Mean value which is greater or equal 0. */
     private final double mean;
-
-    /** Deviation value which might be even negative. */
-    private final double deviation;
 
     /** Random number generator. */
     private final Random random = new Random();
@@ -46,12 +43,10 @@ public class NormallyDistributedThinkTime extends ThinkTime {
      * @param deviation
      *     A <code>double</code> value which might be even negative.
      */
-    public NormallyDistributedThinkTime (
-            final double mean,
-            final double deviation) {
+    public RandomThinkTime (
+            final double mean) {
 
         this.mean = mean;
-        this.deviation = deviation;
     }
 
 
@@ -64,33 +59,21 @@ public class NormallyDistributedThinkTime extends ThinkTime {
         return this.mean;
     }
 
-    /**
-     * Returns the deviation value.
-     *
-     * @return A <code>double</code> value which might be even negative.
-     */
-    public double getDeviation() {
-        return this.deviation;
-    }
-
     @Override
     public String getFunctionDescriptor () {
-        return NormallyDistributedThinkTime.FUNCTION_DESCRIPTOR;
+        return RandomThinkTime.FUNCTION_DESCRIPTOR;
     }
 
     @Override
     public String toString () {
-        return NormallyDistributedThinkTime.FUNCTION_DESCRIPTOR +
-                "(mean: " + this.mean + ", deviation: " + this.deviation + ")";
+        return RandomThinkTime.FUNCTION_DESCRIPTOR +
+                "(mean: " + this.mean + ")";
     }
 
     @Override
     public long getDelay() {
         // nextGaussian() returns a value between 0 and 1;
-        final double value =
-                (this.random.nextGaussian() *
-                this.deviation * NormallyDistributedThinkTime.DEVIATION_FACTOR +
-                this.mean) - 200;        
+        final double value = Math.random() * (this.mean * 2);
 
         final long delay = (value < 0) ? 0L : (long) Math.round(value);
         /*

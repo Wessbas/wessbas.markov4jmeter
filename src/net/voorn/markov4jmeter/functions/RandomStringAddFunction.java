@@ -58,7 +58,8 @@ public class RandomStringAddFunction extends AbstractFunction implements Seriali
 		    JMeterVariables jMeterVariables = currentSampler.getThreadContext().getVariables();		    
 		    String newParameterValue = jMeterVariables.get(this.parameterName);		
 		    newParameterValue += returnString + this.delimiter;		    
-		    jMeterVariables.put(this.parameterName, newParameterValue);          
+		    jMeterVariables.put(this.parameterName, newParameterValue);    
+		    
             return returnString;
 	}
 

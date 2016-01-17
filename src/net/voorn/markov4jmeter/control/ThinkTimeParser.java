@@ -124,6 +124,12 @@ public class ThinkTimeParser {
 
             return ThinkTimeParser.createNormalDistributionThinkTime(
                     parameters);
+        
+        } else if (RandomThinkTime.FUNCTION_DESCRIPTOR.equalsIgnoreCase(functionDescriptor)) {
+        	
+        	return ThinkTimeParser.createRandomThinkTime(
+                    parameters);
+        	
         }
 
         // more cases might be added for further distribution types;
@@ -155,6 +161,39 @@ public class ThinkTimeParser {
                 final double deviation = Double.parseDouble(parameters[1]);
 
                 thinkTime = new NormallyDistributedThinkTime(mean, deviation);
+
+            } catch (final NumberFormatException ex) {
+
+                // keep thinkTime being null for indicating an error;
+            }
+        }
+
+        return thinkTime;
+    }
+    
+    /**
+     * Creates a {@link NormallyDistributedThinkTime} instance, which will be
+     * initialized with the parsed values of the given parameters.
+     *
+     * @param parameters
+     *     The function parameters required by the think time distribution type.
+     *
+     * @return
+     *     A valid instance of {@link NormallyDistributedThinkTime}, or
+     *     <code>null</code> if any parameter parsing fails.
+     */
+    private static RandomThinkTime
+    createRandomThinkTime (final String[] parameters) {
+
+    	RandomThinkTime thinkTime = null;
+
+        if (parameters.length <= 2) {
+
+            try {
+
+                final double mean      = Double.parseDouble(parameters[0]);
+               
+                thinkTime = new RandomThinkTime(mean);
 
             } catch (final NumberFormatException ex) {
 

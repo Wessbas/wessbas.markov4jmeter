@@ -77,8 +77,9 @@ public class RandomStringRemoveFunction  extends AbstractFunction implements Ser
 				}
 			}	
 			// set newString 			    	    
-		    jMeterVariables.put(this.parameterName, newString);     			
-		}		
+		    jMeterVariables.put(this.parameterName, newString);     
+		}			
+		
         return returnString;
 	}
 
