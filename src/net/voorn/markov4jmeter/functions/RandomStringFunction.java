@@ -14,8 +14,6 @@
  * limitations under the License.
  ***************************************************************************/
 
-
-
 package net.voorn.markov4jmeter.functions;
 
 import java.io.Serializable;
@@ -36,13 +34,18 @@ import org.apache.jmeter.functions.InvalidVariableException;
  */
 public class RandomStringFunction extends AbstractFunction implements Serializable {
 
-	private static final List desc = new LinkedList();
+	/**
+	 * DefaultId;
+	 */
+	private static final long serialVersionUID = 1L;
 
-	private static final String KEY = "__RandomString"; //$NON-NLS-1$
+	private static final List<String> desc = new LinkedList<String>();
+
+	private static final String KEY = "__GetRandomString"; //$NON-NLS-1$
 
 	static {
 		desc.add("String list"); //$NON-NLS-1$
-                desc.add("Delimeter"); //$NON-NLS-1$
+        desc.add("Delimeter"); //$NON-NLS-1$
 	}
 
 	private String[] tokens;
@@ -74,21 +77,23 @@ public class RandomStringFunction extends AbstractFunction implements Serializab
 	/**
 	 * Set the parameters for the function.
 	 */
-	public synchronized void setParameters(Collection parameters) throws InvalidVariableException {
+	public synchronized void setParameters(Collection<CompoundVariable> parameters) throws InvalidVariableException {
 		Object[] values = parameters.toArray();
 
 		if (values.length != 2) {
 			throw new InvalidVariableException("Expected 2 got " 
                                 + values.length);
 		}
-                String str = ((CompoundVariable) values[0]).execute();
-                String delim = ((CompoundVariable) values[1]).execute();
-                
-                StringTokenizer tokenizer = new StringTokenizer(str, delim);
-                this.tokens = new String[tokenizer.countTokens()];
-                for (int i=0; tokenizer.hasMoreElements(); i++){
-                    tokens[i] = tokenizer.nextToken().trim();
-                }
+		
+        String str = ((CompoundVariable) values[0]).execute();
+        String delim = ((CompoundVariable) values[1]).execute();
+        
+        StringTokenizer tokenizer = new StringTokenizer(str, delim);
+        this.tokens = new String[tokenizer.countTokens()];
+        
+        for (int i=0; tokenizer.hasMoreElements(); i++){
+            tokens[i] = tokenizer.nextToken().trim();
+        }
 	}
 
 	/**
@@ -101,8 +106,9 @@ public class RandomStringFunction extends AbstractFunction implements Serializab
 	/**
 	 * Get the description of this function.
 	 */
-	public List getArgumentDesc() {
+	public List<String> getArgumentDesc() {
 		return desc;
 	}
 
 }
+

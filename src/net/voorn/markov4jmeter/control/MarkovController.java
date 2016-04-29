@@ -14,8 +14,6 @@
  * limitations under the License.
  ***************************************************************************/
 
-
-
 package net.voorn.markov4jmeter.control;
 
 import java.util.ArrayList;
@@ -25,16 +23,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import org.apache.jmeter.control.Controller;
 
+import org.apache.jmeter.control.Controller;
 import org.apache.jmeter.control.NextIsNullException;
 import org.apache.jmeter.engine.event.LoopIterationEvent;
 import org.apache.jmeter.samplers.Sampler;
 import org.apache.jmeter.testelement.TestElement;
-import org.apache.jmeter.testelement.TestListener;
+import org.apache.jmeter.testelement.TestIterationListener;
+import org.apache.jmeter.testelement.TestStateListener;
 import org.apache.jmeter.testelement.ThreadListener;
-import org.apache.jmeter.testelement.property.IntegerProperty;
 import org.apache.jmeter.testelement.property.BooleanProperty;
+import org.apache.jmeter.testelement.property.IntegerProperty;
 import org.apache.jmeter.testelement.property.StringProperty;
 import org.apache.jmeter.testelement.property.TestElementProperty;
 import org.apache.jmeter.threads.JMeterVariables;
@@ -42,43 +41,47 @@ import org.apache.jorphan.logging.LoggingManager;
 import org.apache.jorphan.util.JMeterStopTestException;
 import org.apache.jorphan.util.JMeterStopThreadException;
 import org.apache.log.Logger;
-
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 
 /**
- * <p>The class represents a Markov Model and contains the definition 
+ * <p>The class represents a Markov Model and contains the definition
  * of the behavior mix to use during execution as well as the specification
  * of the number of allowed parallel active instances of the Markov Model
  * (each representing a user session) during test run. It must only contain
- * ApplicationState elements as direct child elements.</p> 
+ * ApplicationState elements as direct child elements.</p>
  *
  * <p>An instance of the controller executes as follows:
  * <ul>
- * <li>When initialized by the JMeter engine, a behavior 
- * model is requested from the <i>session arrival controller</i>. The entry state 
+ * <li>When initialized by the JMeter engine, a behavior
+ * model is requested from the <i>session arrival controller</i>. The entry state
  * is set according to the user behavior's entry state.</li>
  * <li>When the first iteration is requested by the engine (i.e. the engine calls the
- * method <i>next()</i>), the controller waits inside the <i>session arrival 
- * controller</i>'s queue to be granted session entrance. As soon as the 
- * controller exits the queue, the ApplicationState representing the entry state 
+ * method <i>next()</i>), the controller waits inside the <i>session arrival
+ * controller</i>'s queue to be granted session entrance. As soon as the
+ * controller exits the queue, the ApplicationState representing the entry state
  * is executed.</li>
  * <li>After an ApplicationState has executed, the MarkovController determines
  * the next state by first requesting the set of outgoing transitions
- * from the current state, determining the set of transitions whose guards 
+ * from the current state, determining the set of transitions whose guards
  * evaluate to true, and randomly choosing a transtion from the set based on the
- * probabilities defined within the user behavior model. The action associated 
+ * probabilities defined within the user behavior model. The action associated
  * with the transition being chosen is executed.</li>
  * </ul>
  *
  * @author Andr&eacute; van Hoorn
  */
-public class MarkovController extends org.apache.jmeter.control.GenericController  implements ThreadListener, TestListener{
-    
+public class MarkovController extends org.apache.jmeter.control.GenericController  implements ThreadListener, TestStateListener, TestIterationListener {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
     /** Logger for this class */
     private static final Logger logger = LoggingManager.getLoggerForClass();
-    
+
     /** Random number generator to be used within this class. */
     private static java.util.Random rand = new java.util.Random();
 
@@ -88,35 +91,35 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public final static String COMMENTS = "MarkovController.comments";
     /** Property name used to store the behavior mix. */
     public final static String BEHV_MIX = "MarkovController.behaviorMix";
-    /** Property name used to store the disable/enable state of the arrival 
+    /** Property name used to store the disable/enable state of the arrival
      *  controller. */
     public final static String ENABLE_ARRIVAL_CTRL = "MarkovController.arrivalCtrl";
-    /** Property name used to store the formula defining the allowed active 
+    /** Property name used to store the formula defining the allowed active
      *  sessions count. */
     public final static String ARRIVAL_CTRL_NUM_SESSIONS = "MarkovController.arrivalNumSessions";
-    /** Property name used to store the enable/disable state of the arrival 
+    /** Property name used to store the enable/disable state of the arrival
      *  controller logging. */
     public final static String ENABLE_ARRIVAL_CTRL_LOGGING = "MarkovController.arrivalCtrlLogging";
     /** Property name used to store the arrival controllers log filename. */
     public final static String ARRIVAL_CTRL_LOGFILE = "MarkovController.arrivalCtrlLogFile";
-    
+
     /*
      * Contains user behavior mixes for all applications (during test execution).
      * This map is cleared after each test execution.
      */
     private static Map<Integer, BehaviorMix>  applicationBehaviorMixes =
             Collections.synchronizedMap(new HashMap());
-    
-    /** To make sure that exitSession of the session arrival controller is 
+
+    /** To make sure that exitSession of the session arrival controller is
       * called only once. */
     private boolean mustReduceNumThreads = false;
-    
+
     /** Whether currently within a session or not. */
     private boolean inSession = false;
-    
+
     /* Needed while creating test plan in GUI (to export template behavior file) */
     private transient List<String> stateNames = new ArrayList();
-    
+
     /* Maps state IDs to state objects (during test execution) */
     private transient Map<Integer,ApplicationState> stateMap = new HashMap();
     /* References application's behavior mix (during test execution)  */
@@ -125,15 +128,15 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     private transient BehaviorMixEntry behavior = null;
     /* References current state (during test execution) */
     private transient ApplicationState currentState = null;
-    
+
     /** The associated sessionArivalController */
     private transient SessionArrivalController sessionArrivalController = null;
     /** Whether the session arrival controller is enabled or not */
     private transient boolean sessionArrivalControllerEnabled = false;
-    
+
     /** The test iteration */
     private int testIteration=-1;
-    
+
     /**
      * Creates a new instance of MarkovController.
      */
@@ -148,7 +151,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setBehaviorMix(BehaviorMix mix){
         setProperty(new TestElementProperty(BEHV_MIX, mix));
     }
-    
+
     /**
      * Returns the behavior mix.
      *
@@ -162,7 +165,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         }
         return mix;
     }
-    
+
     /**
      * Set the controller ID.
      *
@@ -171,7 +174,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setId(int newId) {
         setProperty(new IntegerProperty(ID, newId));
     }
-    
+
     /**
      * Returns the controller ID.
      *
@@ -180,7 +183,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public int getId() {
         return getPropertyAsInt(ID);
     }
-    
+
     /**
      * Sets the use of a session arrival controller.
      *
@@ -189,7 +192,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setArrivalCtrlEnabled(boolean enabled){
         setProperty(new BooleanProperty(ENABLE_ARRIVAL_CTRL, enabled));
     }
-    
+
     /**
      * Returns whether a session arrival controller is used or not.
      *
@@ -198,7 +201,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public boolean isArrivalCtrlEnabled(){
         return getPropertyAsBoolean(ENABLE_ARRIVAL_CTRL, false);
     }
-    
+
     /**
      * Set the session arrival formula.
      *
@@ -207,7 +210,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setArrivalCtrlNumSessions(String formula){
         setProperty(new StringProperty(ARRIVAL_CTRL_NUM_SESSIONS, formula));
     }
-    
+
     /**
      * Returns the session arrival formula.
      *
@@ -216,7 +219,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public String getArrivalCtrlNumSessions(){
         return getPropertyAsString(ARRIVAL_CTRL_NUM_SESSIONS);
     }
-    
+
     /**
      * Enables or disables the session arrival logging.
      *
@@ -225,7 +228,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setArrivalCtrlLoggingEnabled(boolean enabled){
         setProperty(new BooleanProperty(ENABLE_ARRIVAL_CTRL_LOGGING, enabled));
     }
-    
+
     /**
      * Returns whether session arrival logging is enabled or disabled.
      *
@@ -234,7 +237,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public boolean isArrivalCtrlLoggingEnabled(){
         return getPropertyAsBoolean(ENABLE_ARRIVAL_CTRL_LOGGING, false);
     }
-    
+
     /**
      * Set the session arrival log file.
      *
@@ -243,8 +246,8 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setArrivalCtrlLogfile(String logfile){
         setProperty(new StringProperty(ARRIVAL_CTRL_LOGFILE, logfile));
     }
-    
-    /** 
+
+    /**
      * Returns the arrival log file.
      *
      * @return the filename.
@@ -252,7 +255,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public String getArrivalCtrlLogfile(){
         return getPropertyAsString(ARRIVAL_CTRL_LOGFILE);
     }
-    
+
     /**
      * Sets the name of the child application states. Called by the model
      * listener when changes in terms of application state changes occur.
@@ -263,7 +266,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public void setStateNames(List<String> names){
         this.stateNames = names;
     }
-    
+
     /**
      * Returns the list of application states associated with this controller.
      *
@@ -272,7 +275,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     public List<String> getStateNames() {
         return this.stateNames;
     }
-    
+
     /**
      * Sets the entry state of the user according to its assigned behavior
      * (during test execution).
@@ -285,7 +288,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         }
         this.currentState = this.stateMap.get(this.behavior.getEntryState());
     }
-    
+
     /**
      * Returns the state name to state ID map.
      *
@@ -293,9 +296,9 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
      */
     private Map<String,Integer> getStateName2IdMap(){
         Map<String,Integer> map = new HashMap(subControllersAndSamplers.size(),1);
-        
+
         for (int i = 0; i < subControllersAndSamplers.size(); i++) {
-            TestElement elem = (TestElement) subControllersAndSamplers.get(i);
+            TestElement elem = subControllersAndSamplers.get(i);
             if (elem instanceof ApplicationState) {
                 ApplicationState state = (ApplicationState) elem;
                 map.put(new String(state.getName()),state.getId());
@@ -303,7 +306,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         }
         return map;
     }
-    
+
     /**
      * Initializes the behavior mix including behavior model instantiation
      * (during test execution).
@@ -325,7 +328,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
             }
         }
     }
-    
+
     /**
      * Assigns a behavior to be used within a user session.
      *
@@ -333,20 +336,24 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
      * @throws JMeterStopThreadException when an error occurs.
      */
     private void assignBehavior() throws JMeterStopTestException, JMeterStopThreadException{
-        try{
-        if(this.behaviorMix == null)
-            this.initializeBehaviorMix();
-        
-        this.behavior = this.behaviorMix.getBehavior();
-        if (this.behavior == null){
-            logger.fatalError("No behavior assigned");
-        }
-        }catch(BehaviorException ex){
-            logger.error(ex.getMessage(),ex);
-            throw new JMeterStopTestException (ex.getMessage());
+
+        try {
+            if (this.behaviorMix == null)
+                this.initializeBehaviorMix();
+
+            this.behavior = this.behaviorMix.getBehavior();
+
+            if (this.behavior == null) {
+                logger.fatalError("No behavior assigned");
+            }
+
+        } catch (final BehaviorException ex) {
+
+            logger.error(ex.getMessage(), ex);
+            throw new JMeterStopTestException(ex.getMessage());
         }
     }
-    
+
     /**
      * Initialize instance. Contains behavior assignment and model
      * initialization.
@@ -355,31 +362,49 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
      */
     @Override
     public void initialize() throws JMeterStopTestException {
+
         super.initialize();
-        
+
+        // TODO: there is still an open issue with a test being stopped when
+        // multiple virtual users are active; if several threads are running,
+        // e.g., 20 virtual users, the JMeterStopTestException which is possibly
+        // thrown at the end of this method, will not cause all threads being
+        // stopped immediately; in case a behavior model is invalid, the same
+        // related error message will be logged multiple times in the GUI and
+        // the JMeter log-file as well; this was already an issue in
+        // Markov4JMeter 1.0 which wrote multiple entries into the log only;
+
+//        System.out.println(Thread.activeCount() + " " + Thread.currentThread().getId());
         TestElement elem;
         for (int i = 0; i < subControllersAndSamplers.size(); i++) {
-            elem = (TestElement) subControllersAndSamplers.get(i);
+            elem = subControllersAndSamplers.get(i);
             if (elem instanceof ApplicationState) {
                 ApplicationState state = (ApplicationState) elem;
                 this.stateMap.put(state.getId(),state);
             }
         }
-        
+
         this.sessionArrivalControllerEnabled = this.isArrivalCtrlEnabled();
         if (this.sessionArrivalControllerEnabled){
             this.sessionArrivalController = SessionArrivalController.getInstance();
             /* dangerous since several thread access this object but it works */
             this.sessionArrivalController.init(this.isArrivalCtrlLoggingEnabled(), this.getArrivalCtrlLogfile());
         }
-        
-        this.assignBehavior();
-        this.setEntryState();
-        this.inSession = false;
+
+        try {
+
+            this.assignBehavior();
+            this.setEntryState();
+            this.inSession = false;
+
+        } catch (final JMeterStopTestException ex) {
+
+            throw ex;
+        }
     }
-    
+
     /**
-     * Reinitalize instance for example after a test iteration. A behavior is
+     * Reinitialize instance for example after a test iteration. A behavior is
      * chosen from the behavior mix.
      *
      * @throws JMeterStopTestException when an error occurs.
@@ -392,7 +417,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         this.setEntryState();
         this.inSession = false;
     }
-    
+
     /**
      * Generate random double in the range from 0.0 to d (exclusive).
      *
@@ -402,7 +427,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     private double nextDouble(double d){
         return rand.nextDouble() * d;
     }
-    
+
     /**
      * Evaluate expression using JavaScript.
      *
@@ -425,10 +450,10 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         } finally {
             Context.exit();
         }
-        
+
         return resultStr;
     }
-    
+
     /**
      * Evaluate the condition and return boolean evaluation value.
      *
@@ -437,17 +462,17 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
      */
     private boolean evaluateCondition(String cond) {
         logger.debug("    getCondition() : [" + cond + "]");
-        
+
         String resultStr = "";
         boolean result = false;
-        
+
         // now evaluate the condition using JavaScript
         if(cond.equals(""))
             return true;
-        
+
         try{
             resultStr = evaluateExpression(cond);
-            
+
             if (resultStr.equals("false")) {
                 result = false;
             } else if (resultStr.equals("true")) {
@@ -458,10 +483,10 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         } catch (Exception ex){
             logger.error(ex.getMessage(), ex);
         }
-               
+
         return result;
     }
-    
+
     /**
      * Execute the transition action which is a list of variable assignments
      * separated by ';'
@@ -474,10 +499,10 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         StringTokenizer actionTokenizer;
         boolean result = false;
         JMeterVariables threadVars = this.getThreadContext().getVariables();
-        
+
         while (actionsTokenizer.hasMoreTokens()){
             String curAction = actionsTokenizer.nextToken();
-            
+
             actionTokenizer = new StringTokenizer(curAction, "=");
             /**
              * @ TODO allow
@@ -486,16 +511,16 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
                 logger.error("Invalid action: " + curAction);
                 return false;
             }
-            
+
             try{
                 if (actionTokenizer.countTokens() == 2){
                     /** Assignment var=expr */
                     String leftSide, rightSide;
-                    
+
                     leftSide = actionTokenizer.nextToken().trim();
-                    
+
                     rightSide = evaluateExpression(actionTokenizer.nextToken().trim());
-                    
+
                     threadVars.put(leftSide, rightSide);
                 }else{
                     /** Function expression (e.g. a function call) */
@@ -506,70 +531,108 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * Sets the next state based on the current.
      */
     public void transition(){
-        Map<Integer,Double> transitionsProbabilityMap;
+
+        Map<Integer,Double> transitionsProbabilitiesMap;
+        Map<Integer,ThinkTime> transitionsThinkTimesMap;
+
         ApplicationStateTransitions transitions = this.currentState.getTransitions();
-        
+
         //System.out.print(Thread.currentThread().getName() + "-" + this.testIteration +
         //        "(" + (this.behavior!=null?this.behavior.getBName():"<NULL>") +")" + "::" +
         //        this.currentState.getName()+" -> ");
         //System.out.println("Transition probabilities:");
-        transitionsProbabilityMap = this.behavior.getStateTransitionMap(this.currentState.getId());
+        transitionsProbabilitiesMap = this.behavior.getStateTransitionProbabilitiesMap(this.currentState.getId());
+        transitionsThinkTimesMap = this.behavior.getStateTransitionThinkTimesMap(this.currentState.getId());
         //System.out.println(transitionsProbabilityMap.toString());
-        
-        {
-            List<ApplicationStateTransition> truelist = new ArrayList();
-            List<Double> cumProbList = new ArrayList();
-            List<ApplicationStateTransition> transitionslist = transitions.getTransitionsAsList();
-            Iterator<ApplicationStateTransition> it = transitionslist.listIterator();
-            /* add final state 0 to truelist and init curCumProb with its probability*/
-            truelist.add(null);
-            double curCumProb = transitionsProbabilityMap.get(0);
-            cumProbList.add(curCumProb);
-            for(int i=0; it.hasNext(); i++){
-                ApplicationStateTransition cur = it.next();
-                
-                double curProb = transitionsProbabilityMap.get(cur.getDstStateId());
-                if (!cur.isDisabled() && !(curProb<=0) && evaluateCondition(cur.getGuard())) {
-                    truelist.add(cur);
-                    curCumProb+=curProb;
-                    cumProbList.add(curCumProb);
-                }
+
+        List<ApplicationStateTransition> truelist = new ArrayList();
+        List<Double> cumProbList = new ArrayList();
+        List<ApplicationStateTransition> transitionslist = transitions.getTransitionsAsList();
+        Iterator<ApplicationStateTransition> it = transitionslist.listIterator();
+        /* add final state 0 to truelist and init curCumProb with its probability*/
+        truelist.add(null);
+        double curCumProb = transitionsProbabilitiesMap.get(0);
+        cumProbList.add(curCumProb);
+        for(int i=0; it.hasNext(); i++){
+            ApplicationStateTransition cur = it.next();
+
+            double curProb = transitionsProbabilitiesMap.get(cur.getDstStateId());
+            if (!cur.isDisabled() && !(curProb<=0) && evaluateCondition(cur.getGuard())) {
+                truelist.add(cur);
+                curCumProb+=curProb;
+                cumProbList.add(curCumProb);
             }
-            
-            // cumProbList contains at least one entry!
-            double rndVal = nextDouble(cumProbList.get(cumProbList.size()-1));
-            
-            //System.out.print("rndVal:" + rndVal + "->" /* + "\ncumProbList: " +
-            //cumProbList.toString() + "\ntruelist: " + truelist.toString()*/);
-            /* pick next state based on rndVal */
-            ApplicationStateTransition nextTransition = truelist.get(0);
-            for (int i=0; i<truelist.size()-1; i++){
-                if(rndVal<cumProbList.get(i))
-                    break;
-                nextTransition = truelist.get(i+1);
-            }
-            /**
-             * @TODO - execute action
-             */
-            if (nextTransition != null){
-                if (!this.executeAction(nextTransition.getAction())){
-                    ;
-                }
-            }
-            
-            this.currentState = nextTransition!=null?this.stateMap.get(nextTransition.getDstStateId()):null;
-            //System.out.println(this.currentState!=null?this.currentState.getName():new String("<EXIT>"));
         }
+
+        // cumProbList contains at least one entry!
+        double rndVal = nextDouble(cumProbList.get(cumProbList.size()-1));
+
+        //System.out.print("rndVal:" + rndVal + "->" /* + "\ncumProbList: " +
+        //cumProbList.toString() + "\ntruelist: " + truelist.toString()*/);
+        /* pick next state based on rndVal */
+        ApplicationStateTransition nextTransition = truelist.get(0);
+        for (int i=0; i<truelist.size()-1; i++){
+            if(rndVal<cumProbList.get(i))
+                break;
+            nextTransition = truelist.get(i+1);
+        }
+
+        /**
+         * @TODO - execute action
+         */
+        if (nextTransition != null){
+
+            if (!this.executeAction(nextTransition.getAction())){
+                ;
+            }
+        }
+        final ApplicationState oldState = this.currentState;
+
+        this.currentState = nextTransition!=null?this.stateMap.get(nextTransition.getDstStateId()):null;
+
+        // after the new current state has been determined, the think time
+        // which might be alternatively modeled via "Gaussian Random Timer"
+        // will cause a delay at this point -> insert own think time delay here;
+
+        if (this.currentState != null) {
+
+            final ThinkTime thinkTime =
+                    transitionsThinkTimesMap.get(this.currentState.getId());
+
+            // old matrix format did not support think times, in that case null
+            // will be returned;
+            if (thinkTime != null) {
+
+                final long delay = thinkTime.getDelay();
+
+                try {
+
+                    // throws an IllegalArgument- or InterruptedException;
+                    Thread.sleep(delay);
+
+                } catch (final Exception ex) {
+
+                    MarkovController.logger.warn(
+
+                            "Think time delay of " + delay + " milliseconds "
+                                    + "could not be performed from state \""
+                                    + oldState.getName() + "\" to state \""
+                                    + this.currentState.getName() + "\"");
+                }
+            }
+        }
+
+        // System.out.println(this.currentState!=null?this.currentState.getName():new String("<EXIT>"));
     }
-    
+
     /**
      * @see org.apache.jmeter.control.GenericController#next
      */
@@ -589,9 +652,9 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
                 throw new JMeterStopTestException (ex.getMessage());
             }
         }
-        
+
         fireIterEvents();
-        
+
         Sampler returnValue = null;
         try {
             if (this.currentState == null) {
@@ -602,7 +665,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         } catch (NextIsNullException e) {
             returnValue = null;
         }
-        
+
         /* exit session. */
         /**
          * @TODO: check why returnValue==null occurs twice
@@ -615,10 +678,10 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
                 this.inSession = false;
             }
         }
-        
+
         return returnValue;
     }
-    
+
     /**
      * @see org.apache.jmeter.control.GenericController#nextIsNull
      */
@@ -627,7 +690,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         this.reInitialize();
         return null;
     }
-    
+
     /**
      * @see org.apache.jmeter.control.GenericController#currentReturnedNull
      */
@@ -635,18 +698,20 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
     protected void currentReturnedNull(Controller c) {
         this.transition();
     }
-    
+
     /**
      * Notifies session arrival controller that test started (workaround).
      */
+    @Override
     public void testStarted() {
         /* Initialize whether needed or not  */
         SessionArrivalController.testStarted();
     }
-    
+
     /**
      * Notifies session arrival controller that test ended (workaround).
      */
+    @Override
     public void testEnded() {
         /* Reset behavior mixes for all applications. Forces a reload on each
            test start */
@@ -654,38 +719,41 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
         synchronized (this.getClass()){
             MarkovController.applicationBehaviorMixes.clear();
         }
-        
+
         /* Notify arrival controller about test end */
         SessionArrivalController.testEnded();
     }
-    
+
     /**
      * Notifies session arrival controller that test started (workaround).
      *
      * @param host the host.
      */
+    @Override
     public void testStarted(String host) {
         this.testStarted();
     }
-    
+
     /**
      * Notifies session arrival controller that test ended (workaround).
      *
      * @param host the host.
      */
+    @Override
     public void testEnded(String host) {
         this.testEnded();
     }
-    
+
     /**
      * Increments iteration count.
      *
      * @param event the event.
      */
+    @Override
     public void testIterationStart(LoopIterationEvent event) {
         this.testIteration++;
     }
-    
+
     /**
      * Clears the controller instance.
      */
@@ -698,6 +766,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
             this.stateNames.clear();
     }
 
+    @Override
     public void threadStarted() {
     }
 
@@ -705,6 +774,7 @@ public class MarkovController extends org.apache.jmeter.control.GenericControlle
      * Iff in session, the session arrival controller is notified about exiting
      * the session.
      */
+    @Override
     public void threadFinished() {
         if(this.sessionArrivalControllerEnabled && this.inSession){
             /* exit session otherwise other guys waiting sleep forever */

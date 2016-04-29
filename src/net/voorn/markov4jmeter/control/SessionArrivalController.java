@@ -258,7 +258,7 @@ public class SessionArrivalController {
         testEnded = false;
         /** @TODO remove */
         logger.info("Using JMeter.Markov version " + Markov4JMeterVersion.getVERSION());
-        System.out.println("Experiment start time (ms):" + startTime);
+        System.out.println("Experiment start time (ms) test:" + startTime);
         JMeterUtils.setProperty("TEST.START.MS",startTime+"");
     }
     
