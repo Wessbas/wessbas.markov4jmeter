@@ -623,6 +623,11 @@ public class MarkovController extends
 
 		ApplicationStateTransitions transitions = this.currentState
 				.getTransitions();
+
+		System.out.println(this.currentState.getName());
+		System.out.println(this.currentState.getTransitions()
+				.getTransitionCount());
+
 		// System.out.print(Thread.currentThread().getName() + "-"
 		// + this.testIteration + "("
 		// + (this.behavior != null ? this.behavior.getBName() : "<NULL>")
@@ -695,7 +700,7 @@ public class MarkovController extends
 		// startTime;
 
 		// cumProbList contains at least one entry!
-		// double rndVal = nextDouble(cumProbList.get(cumProbList.size() - 1));
+		double rndVal = nextDouble(cumProbList.get(cumProbList.size() - 1));
 
 		// System.out.print("rndVal:" + rndVal + "->" /* + "\ncumProbList: " +
 		// cumProbList.toString() + "\ntruelist: " + truelist.toString()*/);

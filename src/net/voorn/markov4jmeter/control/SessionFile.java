@@ -40,7 +40,7 @@ public class SessionFile {
 
 	public SessionData getSessionInstance() {
 		this.index++;
-		if (this.index > sessions.size()) {
+		if (this.index > sessions.size() - 1) {
 			this.index = 0;
 		}
 		return sessions.get(this.index);
